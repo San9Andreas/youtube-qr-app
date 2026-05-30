@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Random QR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e8e8e8;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    background: #111;
+    border-bottom: 1px solid #222;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: #ff0000;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 900; color: #fff;
+  }
+
+  .topbar h1 { font-size: 18px; font-weight: 600; color: #fff; }
+  .topbar p  { font-size: 13px; color: #555; margin-top: 2px; }
+
+  .badge {
+    margin-left: auto;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: #888;
+  }
+  .badge span { color: #fff; font-weight: 700; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* LEFT PANEL */
+  .panel-left {
+    background: #111;
+    border-right: 1px solid #1e1e1e;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #444;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 160px;
+    background: #0d0d0d;
+    border: 1px solid #222;
+    border-radius: 10px;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    padding: 12px 14px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.6;
+  }
+  textarea:focus { border-color: #ff0000; }
+  textarea::placeholder { color: #333; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-red   { background: #ff0000; color: #fff; width: 100%; justify-content: center; }
+  .btn-red:hover { background: #cc0000; }
+
+  .btn-ghost {
+    background: #1a1a1a;
+    color: #888;
+    border: 1px solid #2a2a2a;
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+  .btn-ghost:hover { background: #222; color: #ccc; }
+
+  .hint {
+    font-size: 12px;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  /* QR SECTION */
+  .qr-box {
+    background: #0d0d0d;
+    border: 1px solid #1e1e1e;
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  #qrcode {
+    background: #fff;
+    padding: 14px;
+    border-radius: 10px;
+    display: inline-block;
+  }
+
+  .qr-url {
+    font-size: 11px;
+    color: #444;
+    font-family: monospace;
+    text-align: center;
+    word-break: break-all;
+  }
+
+  .qr-url span { color: #888; }
+
+  /* RIGHT PANEL */
+  .panel-right {
+    padding: 28px 28px;
+    overflow-y: auto;
+  }
+
+  .videos-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .video-card {
+    background: #111;
+    border: 1px solid #1e1e1e;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+  .video-card:hover { border-color: #333; }
+
+  .video-card img {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+    background: #1a1a1a;
+  }
+
+  .video-card-body {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .video-id {
+    font-size: 11px;
+    color: #555;
+    font-family: monospace;
+  }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: #444;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.1s;
+  }
+  .del-btn:hover { color: #ff4444; }
+
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+    color: #333;
+  }
+  .empty-state .big { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 15px; line-height: 1.7; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px; right: 30px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 14px;
+    color: #e0e0e0;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.25s;
+    z-index: 999;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: #2a5c2a; color: #7dff7d; }
+  .toast.error   { border-color: #5c2a2a; color: #ff7d7d; }
+
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    .panel-left { border-right: none; border-bottom: 1px solid #1e1e1e; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">▶</div>
+  <div>
+    <h1>YouTube Random QR</h1>
+    <p>Scan once — go to a random YouTube video every time</p>
+  </div>
+  <div class="badge">Videos: <span id="vid-count">{{ count }}</span></div>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT: Add links + QR -->
+  <div class="panel-left">
+
+    <div>
+      <div class="section-title">Add YouTube Links</div>
+      <textarea id="url-input"
+        placeholder="https://youtube.com/watch?v=...&#10;https://youtu.be/...&#10;https://youtube.com/shorts/...&#10;&#10;One link per line"></textarea>
+      <div style="margin-top:10px">
+        <button class="btn btn-red" onclick="addLinks()">＋  Add Links</button>
+      </div>
+      <p class="hint" style="margin-top:10px">
+        Supports regular videos, Shorts, and youtu.be links.<br>
+        Duplicate links are ignored automatically.
+      </p>
+    </div>
+
+    <div>
+      <div class="section-title">Your QR Code</div>
+      <div class="qr-box">
+        <div id="qrcode"></div>
+        <div class="qr-url">Scan this → goes to a random video<br>
+          <span id="qr-url-text"></span>
+        </div>
+        <div style="display:flex;gap:8px;width:100%">
+          <button class="btn btn-ghost" onclick="downloadQR()" style="flex:1">⬇ Save QR</button>
+          <button class="btn btn-ghost" onclick="copyUrl()" style="flex:1">🔗 Copy Link</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Video grid -->
+  <div class="panel-right">
+    <div class="videos-header">
+      <div class="section-title" style="margin:0">Video Library</div>
+      <button class="btn btn-ghost" onclick="clearAll()">🗑 Clear All</button>
+    </div>
+
+    <div class="video-grid" id="video-grid">
+      {% if links %}
+        {% for link in links %}
+        <div class="video-card" id="card-{{ link.id }}">
+          <a href="{{ link.url }}" target="_blank">
+            <img src="{{ link.thumbnail }}" alt="video" loading="lazy"
+                 onerror="this.style.background='#1a1a1a';this.style.height='112px'">
+          </a>
+          <div class="video-card-body">
+            <span class="video-id">{{ link.id }}</span>
+            <button class="del-btn" onclick="deleteLink('{{ link.id }}')" title="Remove">✕</button>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <div class="big">▶</div>
+          <p>No videos yet.<br>Paste YouTube links on the left and click <strong>Add Links</strong>.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const BASE = window.location.origin;
+  const GO_URL = BASE + "/go";
+  let qrInstance = null;
+
+  function initQR() {
+    document.getElementById("qrcode").innerHTML = "";
+    qrInstance = new QRCode(document.getElementById("qrcode"), {
+      text: GO_URL,
+      width: 200, height: 200,
+      colorDark: "#000000", colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    document.getElementById("qr-url-text").textContent = GO_URL;
+  }
+
+  initQR();
+
+  function toast(msg, type="") {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.className = "toast show " + type;
+    setTimeout(() => el.className = "toast", 3000);
+  }
+
+  async function addLinks() {
+    const raw = document.getElementById("url-input").value.trim();
+    if (!raw) { toast("Paste some YouTube links first.", "error"); return; }
+
+    const res = await fetch("/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: raw })
+    });
+    const data = await res.json();
+
+    document.getElementById("url-input").value = "";
+    document.getElementById("vid-count").textContent = data.total;
+
+    if (data.added === 0) {
+      toast("No new valid YouTube links found.", "error");
+    } else {
+      toast(`✓ Added ${data.added} video${data.added>1?"s":""}. Total: ${data.total}`, "success");
+      setTimeout(() => location.reload(), 800);
+    }
+  }
+
+  async function deleteLink(id) {
+    const res = await fetch("/delete/" + id, { method: "POST" });
+    const data = await res.json();
+    document.getElementById("card-" + id)?.remove();
+    document.getElementById("vid-count").textContent = data.total;
+    toast("Removed.", "");
+    if (data.total === 0) location.reload();
+  }
+
+  async function clearAll() {
+    if (!confirm("Remove all videos?")) return;
+    await fetch("/clear", { method: "POST" });
+    location.reload();
+  }
+
+  function downloadQR() {
+    const canvas = document.querySelector("#qrcode canvas");
+    if (!canvas) { toast("QR not ready yet.", "error"); return; }
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = "youtube-random-qr.png";
+    a.click();
+  }
+
+  function copyUrl() {
+    navigator.clipboard.writeText(GO_URL).then(() => toast("✓ Link copied!", "success"));
+  }
+</script>
+</body>
+</html>
