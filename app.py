@@ -1,5 +1,6 @@
 from flask import Flask, redirect, render_template, request, jsonify
 import random, json, os, re
+from urllib.parse import urlparse, parse_qs
 
 app = Flask(__name__)
 DATA_FILE = os.path.join(os.path.dirname(__file__), "links.json")
@@ -19,16 +20,31 @@ def save_links(links):
 
 def extract_video_id(url):
     url = url.strip()
-    patterns = [
-        r"youtu\.be/([a-zA-Z0-9_-]{11})",
-        r"youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})",
-        r"youtube\.com/shorts/([a-zA-Z0-9_-]{11})",
-        r"youtube\.com/embed/([a-zA-Z0-9_-]{11})",
-    ]
-    for p in patterns:
-        m = re.search(p, url)
-        if m:
-            return m.group(1)
+    try:
+        parsed = urlparse(url)
+        host = parsed.netloc.lower().replace("www.", "")
+
+        # youtu.be/VIDEO_ID
+        if host == "youtu.be":
+            vid = parsed.path.lstrip("/").split("/")[0]
+            if re.match(r'^[a-zA-Z0-9_-]{11}$', vid):
+                return vid
+
+        if "youtube.com" in host:
+            # /shorts/VIDEO_ID  or  /embed/VIDEO_ID  or  /v/VIDEO_ID
+            m = re.match(r'^/(shorts|embed|v)/([a-zA-Z0-9_-]{11})', parsed.path)
+            if m:
+                return m.group(2)
+
+            # /watch?v=VIDEO_ID&list=...&index=...  (any order of params)
+            qs = parse_qs(parsed.query)
+            if "v" in qs:
+                vid = qs["v"][0]
+                if re.match(r'^[a-zA-Z0-9_-]{11}$', vid):
+                    return vid
+
+    except Exception:
+        pass
     return None
 
 @app.route("/")
