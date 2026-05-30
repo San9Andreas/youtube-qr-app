@@ -19,7 +19,10 @@ def save_links(links):
         json.dump(links, f)
 
 def extract_video_id(url):
-    url = url.strip()
+    # Strip all whitespace and invisible/unicode chars
+    url = url.strip().strip('\u200b\u200c\u200d\ufeff\xa0')
+    if not url:
+        return None
     try:
         parsed = urlparse(url)
         host = parsed.netloc.lower().replace("www.", "")
@@ -27,24 +30,30 @@ def extract_video_id(url):
         # youtu.be/VIDEO_ID
         if host == "youtu.be":
             vid = parsed.path.lstrip("/").split("/")[0]
-            if re.match(r'^[a-zA-Z0-9_-]{11}$', vid):
+            if re.match(r'^[a-zA-Z0-9_-]{6,15}$', vid):
                 return vid
 
         if "youtube.com" in host:
             # /shorts/VIDEO_ID  or  /embed/VIDEO_ID  or  /v/VIDEO_ID
-            m = re.match(r'^/(shorts|embed|v)/([a-zA-Z0-9_-]{11})', parsed.path)
+            m = re.match(r'^/(shorts|embed|v)/([a-zA-Z0-9_-]{6,15})', parsed.path)
             if m:
                 return m.group(2)
 
-            # /watch?v=VIDEO_ID&list=...&index=...  (any order of params)
+            # /watch?v=VIDEO_ID&list=...&index=...&start_radio=... (any param order)
             qs = parse_qs(parsed.query)
             if "v" in qs:
-                vid = qs["v"][0]
-                if re.match(r'^[a-zA-Z0-9_-]{11}$', vid):
+                vid = qs["v"][0].strip()
+                if re.match(r'^[a-zA-Z0-9_-]{6,15}$', vid):
                     return vid
 
     except Exception:
         pass
+
+    # Last resort: grab any v= value from raw URL string
+    m = re.search(r'[?&]v=([a-zA-Z0-9_-]{6,15})', url)
+    if m:
+        return m.group(1)
+
     return None
 
 @app.route("/")
